@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>⚡ Transmission Line Monitor</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Mobile-First CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 12px;
+            color: #fff;
+            padding-bottom: 80px;
+        }
+        
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .header h1 i {
+            color: #ffd700;
+            font-size: 1.4rem;
+        }
+        
+        .connection-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 30px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 10px #4caf50;
+        }
+        
+        .status-dot.offline {
+            background: #f44336;
+            box-shadow: 0 0 10px #f44336;
+        }
+        
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0 12px 0;
+        }
+        
+        .section-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-header i {
+            color: #ffd700;
+        }
+        
+        .refresh-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:active {
+            transform: rotate(180deg);
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* HOME SECTION - All main content */
+        
+        /* Main Status Card */
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            padding: 24px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .status-card.normal {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .status-card.fault {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            animation: faultPulse 1.5s infinite;
+        }
+        
+        @keyframes faultPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px rgba(250, 112, 154, 0.5); }
+            100% { transform: scale(1); }
+        }
+        
+        .status-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+        
+        .status-main {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .distance-chip {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Quick Stats Row */
+        .stats-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-item {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        
+        /* Affected Phases Row */
+        .affected-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .phase-tag {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 8px;
+            border-radius: 30px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .phase-tag.active {
+            background: #f44336;
+            border: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Transmission Line Visualization */
+        .line-viz {
+            background: rgba(0,0,0,0.3);
+            border-radius: 30px;
+            padding: 30px 10px 20px 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .line-container {
+            display: flex;
+            align-items: center;
+            min-width: 400px;
+            padding: 0 10px;
+            position: relative;
+        }
+        
+        .station {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+            z-index: 2;
+        }
+        
+        .station.substation {
+            background: #2196f3;
+        }
+        
+        .station.load {
+            background: #ff9800;
+        }
+        
+        .line-track {
+            flex: 1;
+            height: 3px;
+            background: linear-gradient(90deg, #2196f3, #ff9800);
+            margin: 0 5px;
+            position: relative;
+        }
+        
+        .tower-marker {
+            position: absolute;
+            width: 20px;
+            height: 25px;
+            background: #8b6b4d;
+            top: -12px;
+            transform: translateX(-50%);
+            clip-path: polygon(0% 100%, 20% 0%, 80% 0%, 100% 100%);
+        }
+        
+        .tower-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            white-space: nowrap;
+        }
+        
+        .fault-pointer {
+            position: absolute;
+            top: -30px;
+            transform: translateX(-50%);
+            background: #f44336;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            white-space: nowrap;
+            animation: bounce 1s infinite;
+        }
+        
+        .fault-pointer::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid #f44336;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+        }
+        
+        /* CURRENTS SECTION */
+        .phase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .phase-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+        
+        .phase-card.high {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        
+        .phase-icon {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .phase-name {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+        
+        .phase-reading {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
+        }
+        
+        .phase-unit {
+            font-size: 0.9rem;
+            opacity: 0.5;
+        }
+        
+        .warning-tag {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #f44336;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        /* HISTORY SECTION - Uptime, Status, Updated */
+        .history-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .info-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+        }
+        
+        .info-value-large {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .info-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge.online {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status-badge.offline {
+            background: #f44336;
+            color: white;
+        }
+        
+        .history-list {
+            margin-top: 16px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-time {
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+        
+        .history-type {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+        }
+        
+        .history-type.three-phase { background: #f44336; }
+        .history-type.double-line { background: #ff9800; }
+        .history-type.line-line { background: #9c27b0; }
+        .history-type.single-line { background: #2196f3; }
+        
+        .history-distance {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        /* Section visibility */
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 20px 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        
+        .nav-item {
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        
+        .nav-item.active {
+            color: #ffd700;
+            background: rgba(255,215,0,0.1);
+        }
+        
+        .nav-item i {
+            font-size: 1.3rem;
+        }
+        
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            opacity: 0.5;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header (always visible) -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-bolt"></i>
+            <span>Line Monitor</span>
+        </h1>
+        <div class="connection-badge" id="connectionBadge">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="connectionText">Live</span>
+        </div>
+    </div>
+    
+    <!-- HOME SECTION -->
+    <div id="homeSection" class="section active">
+        <div class="container">
+            <!-- Main Status Card -->
+            <div class="status-card" id="statusCard">
+                <div class="status-label" id="statusLabel">System Status</div>
+                <div class="status-main" id="statusMain">
+                    <span id="statusIcon">✅</span>
+                    <span id="statusText">NORMAL</span>
+                </div>
+                <div id="faultDetails"></div>
+            </div>
+            
+            <!-- Quick Stats Row -->
+            <div class="stats-row" id="quickStats">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Affected Phases -->
+            <div class="section-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Affected Phases</h2>
+            </div>
+            <div class="affected-row" id="affectedRow">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Transmission Line Visualization -->
+            <div class="section-header">
+                <h2><i class="fas fa-map-marked-alt"></i> Fault Location</h2>
+            </div>
+            <div class="line-viz" id="lineViz">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- CURRENTS SECTION -->
+    <div id="currentsSection" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-line"></i> Phase Currents</h2>
+                <button class="refresh-btn" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            
+            <div class="phase-grid" id="phaseGrid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- HISTORY SECTION (Uptime, Status, Updated) -->
+    <div id="historySection" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> System Info</h2>
+            </div>
+            
+            <div class="history-section">
+                <!-- System Stats Grid -->
+                <div class="info-grid" id="systemInfoGrid">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <!-- Recent Faults -->
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> Recent Faults</h2>
+                </div>
+                
+                <div class="history-list" id="historyList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation (3 buttons only) -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showSection('home')">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="showSection('currents')">
+            <i class="fas fa-bolt"></i>
+            <span>Currents</span>
+        </button>
+        <button class="nav-item" onclick="showSection('history')">
+            <i class="fas fa-clock"></i>
+            <span>History</span>
+        </button>
+    </div>
+    
+    <script>
+        // ===== FIREBASE CONFIG =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyCG-Sn1tAWKddEwUUgwyzCMNbF9SpHX3eg",
+            authDomain: "transmission-99b69.firebaseapp.com",
+            databaseURL: "https://transmission-99b69-default-rtdb.firebaseio.com",
+            projectId: "transmission-99b69",
+            storageBucket: "transmission-99b69.firebasestorage.app",
+            messagingSenderId: "477393413547",
+            appId: "1:477393413547:web:d589ec804c5edda8439eee"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // ===== STATE =====
+        let currentData = null;
+        let lastUpdate = Date.now();
+        
+        // ===== START LISTENING =====
+        database.ref('/').on('value', (snapshot) => {
+            currentData = snapshot.val();
+            updateAllSections(currentData);
+            updateConnectionStatus(true);
+            lastUpdate = Date.now();
+        }, (error) => {
+            console.error(error);
+            updateConnectionStatus(false);
+        });
+        
+        // ===== UPDATE ALL SECTIONS =====
+        function updateAllSections(data) {
+            if (!data) return;
+            
+            // Home Section
+            updateStatusCard(data);
+            updateQuickStats(data);
+            updateAffectedRow(data);
+            updateVisualization(data);
+            
+            // Currents Section
+            updatePhaseGrid(data);
+            
+            // History Section
+            updateSystemInfo(data);
+            updateHistory(data);
+        }
+        
+        // ===== HOME SECTION FUNCTIONS =====
+        
+        function updateStatusCard(data) {
+            const fault = data.fault || { type: 1, distance: 0 };
+            const card = document.getElementById('statusCard');
+            const statusLabel = document.getElementById('statusLabel');
+            const statusMain = document.getElementById('statusMain');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const faultDetails = document.getElementById('faultDetails');
+            
+            if (fault.type === 1) {
+                card.className = 'status-card normal';
+                statusLabel.innerHTML = '✅ SYSTEM NORMAL';
+                statusIcon.innerHTML = '✅';
+                statusText.innerHTML = 'NO FAULT';
+                faultDetails.innerHTML = '';
+            } else {
+                card.className = 'status-card fault';
+                statusLabel.innerHTML = '⚠️ FAULT DETECTED';
+                
+                const types = ['', 'NORMAL', 'THREE PHASE', 'DOUBLE LINE-GND', 'LINE-LINE', 'SINGLE LINE-GND'];
+                statusIcon.innerHTML = '⚠️';
+                statusText.innerHTML = types[fault.type] || 'UNKNOWN';
+                
+                faultDetails.innerHTML = `
+                    <div class="distance-chip">
+                        <i class="fas fa-location-dot"></i>
+                        ${fault.distance || 0} KM from substation
+                    </div>
+                `;
+            }
+        }
+        
+        function updateQuickStats(data) {
+            const sensors = data.sensors || { current: {} };
+            const currents = sensors.current || {};
+            const fault = data.fault || { type: 1 };
+            
+            const totalCurrent = (currents.red || 0) + (currents.green || 0) + (currents.blue || 0);
+            const maxCurrent = Math.max(currents.red || 0, currents.green || 0, currents.blue || 0);
+            
+            document.getElementById('quickStats').innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${totalCurrent.toFixed(2)}</div>
+                    <div class="stat-label">Total A</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${maxCurrent.toFixed(2)}</div>
+                    <div class="stat-label">Peak A</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${fault.type === 1 ? '0' : '1'}</div>
+                    <div class="stat-label">Faults</div>
+                </div>
+            `;
+        }
+        
+        function updateAffectedRow(data) {
+            const affected = data.affected || { red: false, green: false, blue: false };
+            
+            const phases = [
+                { id: 'red', name: 'RED', icon: '🔴', active: affected.red },
+                { id: 'green', name: 'GREEN', icon: '🟢', active: affected.green },
+                { id: 'blue', name: 'BLUE', icon: '🔵', active: affected.blue }
+            ];
+            
+            let html = '';
+            phases.forEach(phase => {
+                html += `
+                    <div class="phase-tag ${phase.active ? 'active' : ''}">
+                        ${phase.icon} ${phase.name}
+                        ${phase.active ? '⚠️' : '✓'}
+                    </div>
+                `;
+            });
+            
+            document.getElementById('affectedRow').innerHTML = html;
+        }
+        
+        function updateVisualization(data) {
+            const visualization = data.visualization || { faultLocation: 0 };
+            const faultDist = visualization.faultLocation || 0;
+            
+            let towers = '';
+            for (let km = 2; km <= 8; km += 2) {
+                const left = (km / 10) * 100;
+                towers += `
+                    <div class="tower-marker" style="left: ${left}%">
+                        <div class="tower-label">${km}km</div>
+                    </div>
+                `;
+            }
+            
+            let faultMarker = '';
+            if (faultDist > 0 && faultDist <= 10) {
+                const left = (faultDist / 10) * 100;
+                faultMarker = `
+                    <div class="fault-pointer" style="left: ${left}%">
+                        ⚡ FAULT
+                    </div>
+                `;
+            }
+            
+            document.getElementById('lineViz').innerHTML = `
+                <div class="line-container">
+                    <span class="station substation">SUB</span>
+                    <div class="line-track">
+                        ${towers}
+                        ${faultMarker}
+                    </div>
+                    <span class="station load">LOAD</span>
+                </div>
+            `;
+        }
+        
+        // ===== CURRENTS SECTION =====
+        
+        function updatePhaseGrid(data) {
+            const sensors = data.sensors || { current: {} };
+            const currents = sensors.current || {};
+            
+            const phases = [
+                { id: 'red', name: 'RED', icon: '🔴', value: currents.red || 0 },
+                { id: 'green', name: 'GREEN', icon: '🟢', value: currents.green || 0 },
+                { id: 'blue', name: 'BLUE', icon: '🔵', value: currents.blue || 0 },
+                { id: 'neutral', name: 'NEUTRAL', icon: '⚪', value: currents.neutral || 0 }
+            ];
+            
+            let html = '';
+            phases.forEach(phase => {
+                const isHigh = phase.value > 0.5;
+                html += `
+                    <div class="phase-card ${isHigh ? 'high' : ''}">
+                        ${isHigh ? '<div class="warning-tag">HIGH</div>' : ''}
+                        <div class="phase-icon">${phase.icon}</div>
+                        <div class="phase-name">${phase.name}</div>
+                        <div class="phase-reading">
+                            ${phase.value.toFixed(2)}<span class="phase-unit">A</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('phaseGrid').innerHTML = html;
+        }
+        
+        // ===== HISTORY SECTION =====
+        
+        function updateSystemInfo(data) {
+            const system = data.system || { lastUpdate: 0, status: 'UNKNOWN' };
+            
+            const uptime = system.lastUpdate ? Math.floor((Date.now()/1000) - system.lastUpdate) : 0;
+            const hours = Math.floor(uptime / 3600);
+            const mins = Math.floor((uptime % 3600) / 60);
+            
+            const statusClass = system.status === 'ONLINE' ? 'online' : 'offline';
+            const statusText = system.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
+            
+            document.getElementById('systemInfoGrid').innerHTML = `
+                <div class="info-card">
+                    <div class="info-value-large">${hours}h ${mins}m</div>
+                    <div class="info-label">Uptime</div>
+                </div>
+                <div class="info-card">
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                    <div class="info-label">Status</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-value-large">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                    <div class="info-label">Updated</div>
+                </div>
+            `;
+        }
+        
+        function updateHistory(data) {
+            const history = data.history?.recent || [];
+            const list = document.getElementById('historyList');
+            
+            if (!history || history.length === 0 || history[0] === "") {
+                list.innerHTML = '<div class="empty-state">No recent faults</div>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach(entry => {
+                if (entry && entry !== "") {
+                    try {
+                        const fault = typeof entry === 'string' ? JSON.parse(entry) : entry;
+                        const typeClass = getFaultClass(fault.type || fault.typeName);
+                        
+                        html += `
+                            <div class="history-item">
+                                <div>
+                                    <div class="history-time">${fault.time || 'N/A'}</div>
+                                    <span class="history-type ${typeClass}">${fault.typeName || fault.type || 'Unknown'}</span>
+                                </div>
+                                <div class="history-distance">${fault.distance || 0}km</div>
+                            </div>
+                        `;
+                    } catch (e) {
+                        console.error('Parse error:', e);
+                    }
+                }
+            });
+            
+            list.innerHTML = html || '<div class="empty-state">No history</div>';
+        }
+        
+        function getFaultClass(type) {
+            if (type === 2 || type === 'THREE PHASE') return 'three-phase';
+            if (type === 3 || type === 'DOUBLE LINE-GND') return 'double-line';
+            if (type === 4 || type === 'LINE-LINE') return 'line-line';
+            if (type === 5 || type === 'SINGLE LINE-GND') return 'single-line';
+            return '';
+        }
+        
+        // ===== NAVIGATION =====
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(section + 'Section').classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and highlight clicked button
+            event.currentTarget.classList.add('active');
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // ===== CONNECTION STATUS =====
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                dot.className = 'status-dot';
+                text.innerHTML = 'Live';
+            } else {
+                dot.className = 'status-dot offline';
+                text.innerHTML = 'Offline';
+            }
+        }
+        
+        // ===== REFRESH =====
+        function refreshData() {
+            if (currentData) {
+                updateAllSections(currentData);
+            }
+        }
+        
+        // ===== PULL TO REFRESH =====
+        let touchStart = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStart = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (window.scrollY === 0 && e.touches[0].clientY - touchStart > 100) {
+                refreshData();
+            }
+        });
+        
+        // ===== CHECK CONNECTION =====
+        setInterval(() => {
+            if (Date.now() - lastUpdate > 10000) {
+                updateConnectionStatus(false);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
