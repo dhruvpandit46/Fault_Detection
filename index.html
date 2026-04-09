@@ -768,8 +768,8 @@
             const currents = sensors.current || {};
             const fault = data.fault || { type: 1 };
             
-            const totalCurrent = (currents.red || 0) + (currents.green || 0) + (currents.blue || 0);
-            const maxCurrent = Math.max(currents.red || 0, currents.green || 0, currents.blue || 0);
+            const totalCurrent = (currents.red || 0) + (currents.yellow || 0) + (currents.blue || 0);
+            const maxCurrent = Math.max(currents.red || 0, currents.yellow || 0, currents.blue || 0);
             
             document.getElementById('quickStats').innerHTML = `
                 <div class="stat-item">
@@ -788,11 +788,11 @@
         }
         
         function updateAffectedRow(data) {
-            const affected = data.affected || { red: false, green: false, blue: false };
+            const affected = data.affected || { red: false, yellow: false, blue: false };
             
             const phases = [
                 { id: 'red', name: 'RED', icon: '🔴', active: affected.red },
-                { id: 'green', name: 'GREEN', icon: '🟢', active: affected.green },
+                { id: 'yellow', name: 'YELLOW', icon: '🟡', active: affected.yellow },
                 { id: 'blue', name: 'BLUE', icon: '🔵', active: affected.blue }
             ];
             
@@ -853,7 +853,7 @@
             
             const phases = [
                 { id: 'red', name: 'RED', icon: '🔴', value: currents.red || 0 },
-                { id: 'green', name: 'GREEN', icon: '🟢', value: currents.green || 0 },
+                { id: 'yellow', name: 'YELLOW', icon: '🟡', value: currents.yellow || 0 },
                 { id: 'blue', name: 'BLUE', icon: '🔵', value: currents.blue || 0 },
                 { id: 'neutral', name: 'NEUTRAL', icon: '⚪', value: currents.neutral || 0 }
             ];
