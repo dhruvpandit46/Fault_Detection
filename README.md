@@ -294,7 +294,7 @@ Contributions are welcome.
 
 Licensed under the **MIT License**.
 
-MIT © 2025 Dhruv Pandit.
+MIT © 2026 Dhruv Pandit.
 
 See the [LICENSE](LICENSE) file for full license details.
 
